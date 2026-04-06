@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pokémon Type Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --card: #0f3460;
+    --accent: #e94560;
+    --accent2: #f5a623;
+    --text: #eaeaea;
+    --text-muted: #8892a4;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 4rem;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  header h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(12px, 3vw, 18px);
+    color: var(--accent2);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    line-height: 1.6;
+  }
+  header p {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: var(--radius);
+    padding: 1.75rem;
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .score-bar {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .score-bar b { color: var(--text); font-weight: 700; }
+
+  .prog-wrap {
+    height: 5px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 1.75rem;
+  }
+  .prog-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+
+  .type-display {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  .type-display .sublabel {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+  }
+  .big-badge {
+    display: inline-block;
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(11px, 3.5vw, 16px);
+    padding: 12px 32px;
+    border-radius: 50px;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+
+  .slots {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .slot {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 2px dashed rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.25s;
+  }
+  .slot.ok {
+    border-style: solid;
+    border-color: #4CAF50;
+    background: rgba(76,175,80,0.15);
+    color: #81c784;
+  }
+
+  .ac-wrap { position: relative; margin-bottom: 0.75rem; }
+  .input-row { display: flex; gap: 8px; }
+  .input-row input {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-row input:focus { border-color: var(--accent2); }
+  .input-row input::placeholder { color: var(--text-muted); font-weight: 400; }
+  .input-row input:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .input-row button, .next-btn, .giveup-btn, .clue-btn, .reveal-btn, .restart-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #fff;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 18px;
+    transition: opacity 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .input-row button:hover, .next-btn:hover, .restart-btn:hover { opacity: 0.85; }
+  .input-row button:active, .next-btn:active { transform: scale(0.97); }
+  .input-row button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .next-btn { width: 100%; padding: 12px; font-size: 15px; background: #4CAF50; margin-top: 4px; }
+  .restart-btn { width: 100%; padding: 12px; font-size: 15px; background: var(--accent2); color: #1a1a2e; }
+
+  .giveup-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-top: 4px;
+  }
+  .giveup-btn:hover { border-color: rgba(255,255,255,0.25); color: var(--text); }
+
+  .dropdown {
+    background: #1e2d4a;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-sm);
+    margin-top: 4px;
+    overflow: hidden;
+    position: absolute;
+    width: 100%;
+    z-index: 10;
+  }
+  .dd-item {
+    padding: 9px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+    text-transform: capitalize;
+    transition: background 0.1s;
+  }
+  .dd-item:hover, .dd-item.active { background: rgba(255,255,255,0.07); }
+  .dot { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; }
+
+  .feedback {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    min-height: 22px;
+    margin-bottom: 0.75rem;
+    color: var(--text-muted);
+    transition: color 0.2s;
+  }
+  .feedback.ok { color: #81c784; }
+  .feedback.bad { color: #e57373; }
+
+  .guesses {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    min-height: 36px;
+    margin-bottom: 1.25rem;
+  }
+  .chip {
+    padding: 5px 14px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    text-transform: capitalize;
+    animation: pop 0.15s ease;
+  }
+  .chip.wrong {
+    background: rgba(255,255,255,0.06) !important;
+    color: var(--text-muted);
+    border: 1px solid rgba(255,255,255,0.1);
+    text-decoration: line-through;
+    opacity: 0.6;
+  }
+  .chip.ghost { opacity: 0.35; }
+  @keyframes pop { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .clue-section {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 1rem;
+  }
+  .clue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .clue-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--accent2);
+    font-weight: 700;
+  }
+  .clue-btn, .reveal-btn {
+    background: rgba(245,166,35,0.15);
+    border: 1px solid rgba(245,166,35,0.3);
+    color: var(--accent2);
+    padding: 4px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+  }
+  .clue-btn:hover, .reveal-btn:hover { background: rgba(245,166,35,0.25); opacity: 1; }
+  .clue-text {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.65;
+    margin-bottom: 10px;
+  }
+  .letter-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .letter-group { display: flex; gap: 3px; align-items: flex-end; }
+  .letter-box {
+    width: 17px;
+    height: 22px;
+    border-bottom: 2px solid rgba(255,255,255,0.25);
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 22px;
+    color: var(--text);
+    text-transform: capitalize;
+    transition: color 0.2s;
+  }
+  .letter-box.shown { color: var(--accent2); border-color: var(--accent2); }
+
+  .clue-toggle-wrap { text-align: center; margin-bottom: 1rem; }
+
+  .summary {
+    text-align: center;
+    padding: 1rem 0;
+  }
+  .summary .trophy { font-size: 52px; margin-bottom: 0.75rem; }
+  .summary h2 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(10px, 2.5vw, 14px);
+    color: var(--accent2);
+    margin-bottom: 1rem;
+    line-height: 1.7;
+  }
+  .summary .big {
+    font-size: 52px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+  .summary .sub { font-size: 15px; color: var(--text-muted); margin-bottom: 1.5rem; }
+  .summary .grade {
+    display: inline-block;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    padding: 8px 20px;
+    border-radius: 50px;
+    margin-bottom: 1.5rem;
+  }
+
+  .divider {
+    height: 1px;
+    background: rgba(255,255,255,0.07);
+    margin: 1rem 0;
+  }
+
+  @media (max-width: 400px) {
+    .card { padding: 1.25rem; }
+    .input-row button { padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Pokémon Type Quiz</h1>
+  <p>Guess what's super effective against each type</p>
+</header>
+
+<div class="card" id="app"></div>
+
+<script>
+const TC = {
+  normal:'#A8A77A', fire:'#EE8130', water:'#6390F0', electric:'#F7D02C',
+  grass:'#7AC74C', ice:'#96D9D6', fighting:'#C22E28', poison:'#A33EA1',
+  ground:'#E2BF65', flying:'#A98FF3', psychic:'#F95587', bug:'#A6B91A',
+  rock:'#B6A136', ghost:'#735797', dragon:'#6F35FC', dark:'#705746',
+  steel:'#B7B7CE', fairy:'#D685AD'
+};
+const ALL_TYPES = Object.keys(TC);
+
+const WEAK = {
+  normal:   ['fighting'],
+  fire:     ['water','ground','rock'],
+  water:    ['grass','electric'],
+  electric: ['ground'],
+  grass:    ['fire','ice','poison','flying','bug'],
+  ice:      ['fire','fighting','rock','steel'],
+  fighting: ['flying','psychic','fairy'],
+  poison:   ['ground','psychic'],
+  ground:   ['water','grass','ice'],
+  flying:   ['electric','ice','rock'],
+  psychic:  ['bug','ghost','dark'],
+  bug:      ['fire','flying','rock'],
+  rock:     ['water','grass','fighting','ground','steel'],
+  ghost:    ['ghost','dark'],
+  dragon:   ['ice','dragon','fairy'],
+  dark:     ['fighting','bug','fairy'],
+  steel:    ['fire','fighting','ground'],
+  fairy:    ['poison','steel']
+};
+
+const CLUES = {
+  normal:   'These Pokémon are plain and balanced — but one martial art is their bane.',
+  fire:     'Hot and fierce, but cool liquids, earthy terrain, and hard stone can snuff them out.',
+  water:    'Splashing around is fun until a jolt of electricity or a vine wraps around you.',
+  electric: 'Shocking power — until you dig underground where no current can reach.',
+  grass:    'Lush and green, but torched by flame, frozen by ice, and nibbled by bugs in the sky.',
+  ice:      'Chilling winds fall to blazing fire, brute force, solid rock, and tough metal.',
+  fighting: 'Powerful brawlers grounded by flight, psychic power, and fairy magic.',
+  poison:   'Toxic types crumble before the earth itself and sharp psychic minds.',
+  ground:   'Earthy Pokémon melt in water, wilt in grass, and shatter in ice.',
+  flying:   'Sky riders get struck by lightning, frozen mid-flight, and pelted with rock.',
+  psychic:  'Minds unravel before bugs, shadows, and the darkness within.',
+  bug:      'Tiny crawlers get torched, blown away, or crushed under falling rock.',
+  rock:     'Hard stone dissolves in water, crumbles under plant roots, breaks from fighting, erodes from ground, and bends to steel.',
+  ghost:    'Spirits are undone only by other spirits — and swallowed by darkness.',
+  dragon:   'Ancient power falls to freezing cold, other dragons, and fairy charm.',
+  dark:     'The shadowy type fears righteous fists, swarming bugs, and fairy light.',
+  steel:    'Tough metal melts in fire, bends under fighting fists, and sinks into the ground.',
+  fairy:    'Whimsical magic withers against poison and hard cold steel.'
+};
+
+let order, idx, score, totC, totP, guesses, revealed, clueUnlocked, clueLetters, _fb, _fbc, ddIdx;
+
+function init() {
+  order = [...ALL_TYPES].sort(() => Math.random() - 0.5);
+  idx = 0; score = 0; totC = 0; totP = 0;
+  guesses = []; revealed = false; clueUnlocked = false; clueLetters = {};
+  _fb = ''; _fbc = ''; ddIdx = -1;
+}
+
+function cur() { return order[idx]; }
+function answers() { return WEAK[cur()]; }
+function found() { return guesses.filter(g => answers().includes(g)); }
+
+function acMatches(val) {
+  if (!val) return [];
+  return ALL_TYPES.filter(t => t.startsWith(val) && !guesses.includes(t)).slice(0, 7);
+}
+
+function grade(pct) {
+  if (pct >= 90) return { label: 'S Rank!', bg: '#F7D02C', color: '#1a1a2e' };
+  if (pct >= 75) return { label: 'A Rank', bg: '#7AC74C', color: '#fff' };
+  if (pct >= 55) return { label: 'B Rank', bg: '#6390F0', color: '#fff' };
+  if (pct >= 35) return { label: 'C Rank', bg: '#EE8130', color: '#fff' };
+  return { label: 'D Rank', bg: '#C22E28', color: '#fff' };
+}
+
+function render() {
+  const app = document.getElementById('app');
+  if (idx >= ALL_TYPES.length) {
+    const pct = Math.round(totC / totP * 100);
+    const g = grade(pct);
+    app.innerHTML = `<div class="summary">
+      <div class="trophy">🏆</div>
+      <h2>All 18 types complete!</h2>
+      <div class="big">${totC}<span style="font-size:24px;color:var(--text-muted)">/${totP}</span></div>
+      <p class="sub">${pct}% of all weaknesses found</p>
+      <div class="grade" style="background:${g.bg};color:${g.color}">${g.label}</div>
+      <div class="divider"></div>
+      <button class="restart-btn" onclick="restart()">Play again ↻</button>
+    </div>`;
+    return;
+  }
+
+  const type = cur(), ans = answers(), fn = found();
+  const done = fn.length === ans.length;
+  const prog = idx / ALL_TYPES.length * 100;
+
+  const slotsHTML = ans.map((_, i) =>
+    `<div class="slot ${i < fn.length ? 'ok' : ''}">${i < fn.length ? '✓' : ''}</div>`
+  ).join('');
+
+  let guessHTML = '';
+  for (const g of guesses) {
+    const ok = ans.includes(g);
+    guessHTML += `<div class="chip ${ok ? '' : 'wrong'}" style="${ok ? 'background:' + TC[g] : ''}">${g}</div>`;
+  }
+  if (revealed) {
+    for (const a of ans) {
+      if (!fn.includes(a)) guessHTML += `<div class="chip ghost" style="background:${TC[a]}">${a}</div>`;
+    }
+  }
+
+  let clueHTML = '';
+  if (clueUnlocked) {
+    const letterRows = buildLetterRows(ans, fn);
+    clueHTML = `<div class="clue-section">
+      <div class="clue-header">
+        <span class="clue-label">Clue</span>
+        ${!revealed && !done ? `<button class="reveal-btn" onclick="revealLetter()">+ Reveal letter</button>` : ''}
+      </div>
+      <div class="clue-text">${CLUES[type]}</div>
+      <div class="letter-row">${letterRows}</div>
+    </div>`;
+  } else {
+    clueHTML = `<div class="clue-toggle-wrap"><button class="clue-btn" onclick="unlockClue()">Show clue</button></div>`;
+  }
+
+  app.innerHTML = `
+    <div class="score-bar">
+      <span>Type <b>${idx + 1}</b> / ${ALL_TYPES.length}</span>
+      <span>Score: <b>${score}</b></span>
+    </div>
+    <div class="prog-wrap"><div class="prog-bar" style="width:${prog}%"></div></div>
+    <div class="type-display">
+      <div class="sublabel">Super effective against...</div>
+      <div class="big-badge" style="background:${TC[type]}">${type}</div>
+    </div>
+    <div class="slots">${slotsHTML}</div>
+    <div class="ac-wrap">
+      <div class="input-row">
+        <input type="text" id="gi" placeholder="Type a Pokémon type..." autocomplete="off" autocorrect="off" spellcheck="false" ${done || revealed ? 'disabled' : ''}/>
+        <button onclick="submitGuess()" ${done || revealed ? 'disabled' : ''}>Guess</button>
+      </div>
+      <div id="dd"></div>
+    </div>
+    <div class="feedback ${_fbc}">${_fb}</div>
+    <div class="guesses">${guessHTML}</div>
+    ${clueHTML}
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${done || revealed
+        ? `<button class="next-btn" onclick="nextType()">${idx + 1 < ALL_TYPES.length ? 'Next type →' : 'See results →'}</button>`
+        : `<button class="giveup-btn" onclick="giveUp()">Give up / reveal answers</button>`
+      }
+    </div>`;
+
+  if (!done && !revealed) {
+    const inp = document.getElementById('gi');
+    if (inp) {
+      inp.focus();
+      inp.addEventListener('input', onInput);
+      inp.addEventListener('keydown', onKey);
+    }
+  }
+}
+
+function buildLetterRows(ans, fn) {
+  let html = '';
+  for (const a of ans) {
+    if (fn.includes(a)) {
+      html += `<div style="display:flex;align-items:center;gap:4px"><div class="chip" style="background:${TC[a]};font-size:12px;padding:3px 10px">${a} ✓</div></div>`;
+      continue;
+    }
+    const shown = clueLetters[a] || 0;
+    html += `<div class="letter-group">`;
+    for (let i = 0; i < a.length; i++) {
+      html += `<div class="letter-box ${i < shown ? 'shown' : ''}">${i < shown ? a[i] : ''}</div>`;
+    }
+    html += `</div>`;
+  }
+  return html;
+}
+
+function onInput(e) {
+  const val = e.target.value.trim().toLowerCase();
+  const matches = acMatches(val);
+  ddIdx = -1;
+  const dd = document.getElementById('dd');
+  if (!dd) return;
+  if (!matches.length) { dd.innerHTML = ''; return; }
+  dd.innerHTML = `<div class="dropdown">${matches.map((t, i) =>
+    `<div class="dd-item" data-t="${t}" onmousedown="pickAC('${t}')" onmouseover="ddIdx=${i};highlightDD()">
+      <div class="dot" style="background:${TC[t]}"></div>${t}
+    </div>`
+  ).join('')}</div>`;
+}
+
+function onKey(e) {
+  const dd = document.getElementById('dd');
+  const items = dd ? dd.querySelectorAll('.dd-item') : [];
+  if (e.key === 'ArrowDown') { e.preventDefault(); ddIdx = Math.min(ddIdx + 1, items.length - 1); highlightDD(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); ddIdx = Math.max(ddIdx - 1, 0); highlightDD(); }
+  else if (e.key === 'Enter') {
+    if (ddIdx >= 0 && items[ddIdx]) pickAC(items[ddIdx].dataset.t);
+    else submitGuess();
+  } else if (e.key === 'Escape') { if (dd) dd.innerHTML = ''; ddIdx = -1; }
+}
+
+function highlightDD() {
+  const dd = document.getElementById('dd');
+  if (!dd) return;
+  dd.querySelectorAll('.dd-item').forEach((el, i) => el.classList.toggle('active', i === ddIdx));
+}
+
+function pickAC(t) {
+  const inp = document.getElementById('gi');
+  if (inp) inp.value = t;
+  const dd = document.getElementById('dd');
+  if (dd) dd.innerHTML = '';
+  ddIdx = -1;
+  submitGuess();
+}
+
+function submitGuess() {
+  const inp = document.getElementById('gi');
+  if (!inp) return;
+  const val = inp.value.trim().toLowerCase();
+  inp.value = '';
+  const dd = document.getElementById('dd');
+  if (dd) dd.innerHTML = '';
+  if (!val) return;
+  if (!TC[val]) { _fb = `"${val}" is not a known type.`; _fbc = 'bad'; render(); return; }
+  if (guesses.includes(val)) { _fb = `Already guessed ${val}!`; _fbc = ''; render(); return; }
+  guesses.push(val);
+  const ans = answers();
+  if (ans.includes(val)) {
+    score++;
+    const fn = guesses.filter(g => ans.includes(g));
+    if (fn.length === ans.length) { _fb = 'All weaknesses found!'; _fbc = 'ok'; }
+    else { _fb = `Correct! ${ans.length - fn.length} more to find.`; _fbc = 'ok'; }
+  } else {
+    _fb = `${val} is not super effective against ${cur()}.`; _fbc = 'bad';
+  }
+  render();
+}
+
+function unlockClue() { clueUnlocked = true; render(); }
+
+function revealLetter() {
+  const ans = answers(), fn = found();
+  for (const a of ans) {
+    if (fn.includes(a)) continue;
+    const shown = clueLetters[a] || 0;
+    if (shown < a.length) { clueLetters[a] = shown + 1; break; }
+  }
+  render();
+}
+
+function giveUp() {
+  const ans = answers(), fn = found();
+  totC += fn.length; totP += ans.length;
+  revealed = true; _fb = 'Answers revealed.'; _fbc = ''; render();
+}
+
+function nextType() {
+  if (!revealed) { const ans = answers(), fn = found(); totC += fn.length; totP += ans.length; }
+  idx++; guesses = []; revealed = false; clueUnlocked = false; clueLetters = {};
+  _fb = ''; _fbc = ''; ddIdx = -1; render();
+}
+
+function restart() { init(); render(); }
+
+init();
+render();
+</script>
+</body>
+</html>
